@@ -67,7 +67,6 @@ async def price(ctx, *args):
     assets = ','.join(coins)
     asset_data = get_asset_price(assets)
 
-    print(assets)
     for asset in asset_data:
         if asset_data[asset]['usd_24h_change'] < 0:
             await ctx.send("**" + asset + ":** $" + str(asset_data[asset]['usd']) + "\n24h change: " +
@@ -107,9 +106,6 @@ async def before():
     print("Finished waiting")
 
 
-# Populates global coin_list dictionary
-# with mapping of coin symbol to coin id
-# from output of cg.get_coins_list()
 def populate_coin_list():
     for coin in cg.get_coins_list():
         coin_list[coin['symbol']] = coin['id']
