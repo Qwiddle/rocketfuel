@@ -12,16 +12,19 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 cg = CoinGeckoAPI()
-bot = commands.Bot(command_prefix='^')
+bot = commands.Bot(command_prefix='$')
 channel = bot.get_channel('')
 default_currency = 'usd'
 alert_container = {}
+coin_list = {}
+
 
 @bot.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(bot))
 
     alert_task.start()
+
 
 @bot.event
 async def on_message(message):
@@ -30,9 +33,11 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
+
 @bot.command()
 async def ping(ctx):
     await ctx.send(cg.ping()['gecko_says'])
+
 
 @bot.command()
 async def alerts(ctx):
@@ -45,6 +50,7 @@ async def alerts(ctx):
 
     await ctx.send(message)
 
+
 @bot.command()
 async def clear(ctx, target):
     if target.lower() == 'alerts':
@@ -56,25 +62,30 @@ async def clear(ctx, target):
 
 @bot.command()
 async def price(ctx, *args):
-    lower = map(lambda x:x.lower(), args)
+    coins = convert_args_to_coin_id(args)
 
-    assets = ','.join(lower)
+    assets = ','.join(coins)
     asset_data = get_asset_price(assets)
 
+    print(assets)
     for asset in asset_data:
         if asset_data[asset]['usd_24h_change'] < 0:
-            await ctx.send("**" + asset + ":** $" + str(asset_data[asset]['usd']) + "\n24h change: " + str(round(asset_data[asset]['usd_24h_change'], 2)) + "%  :arrow_down:\n")
+            await ctx.send("**" + asset + ":** $" + str(asset_data[asset]['usd']) + "\n24h change: " +
+                           str(round(asset_data[asset]['usd_24h_change'], 2)) + "%  :arrow_down:\n")
         else:
-            await ctx.send("**" + asset + ":** $" + str(asset_data[asset]['usd']) + "\n24h change: " + str(round(asset_data[asset]['usd_24h_change'], 2)) + "%  :arrow_up:")
+            await ctx.send("**" + asset + ":** $" + str(asset_data[asset]['usd']) + "\n24h change: " +
+                           str(round(asset_data[asset]['usd_24h_change'], 2)) + "%  :arrow_up:")
+
 
 @bot.command()
 async def alert(ctx, asset, amount, threshold):
     alert_container[asset] = [amount, threshold, ctx.author.mention]
-    await ctx.send('Alert set by _{}_ for {}, occuring when value hits {} :white_check_mark:'.format(ctx.author.mention, asset, amount))
+    await ctx.send('Alert set by _{}_ for {}, occurring when value hits {} :white_check_mark:'.format(ctx.author.mention, asset, amount))
+
 
 @tasks.loop(seconds = 30)
 async def alert_task():
-    if(len(alert_container) > 0):
+    if len(alert_container) > 0:
         for key in alert_container:
             amount = float(alert_container[key][0])
             threshold = float(alert_container[key][1])
@@ -89,15 +100,41 @@ async def alert_task():
             if amount >= low_range_asset_price and amount <= high_range_asset_price:
                 await bot.get_channel(680192332645269524).send(':red_circle: :green_circle:  {} :green_circle: :red_circle: - is within {}% of your target price of {}! Are we buying, {}?'.format(key, threshold, amount, author))
 
+
 @alert_task.before_loop
 async def before():
     await bot.wait_until_ready()
     print("Finished waiting")
 
+
+# Populates global coin_list dictionary
+# with mapping of coin symbol to coin id
+# from output of cg.get_coins_list()
+def populate_coin_list():
+    for coin in cg.get_coins_list():
+        coin_list[coin['symbol']] = coin['id']
+
+# Converts arguments with a list of coins to coin ids
+# for cg.get_price support
+# Example input: btc, eth, monero
+# Output: ['bitcoin', 'ethereum', 'monero']
+def convert_args_to_coin_id(coins):
+    lower_coins = list(map(lambda x:x.lower(), coins))
+
+    for index, coin in enumerate(lower_coins):
+        if coin in coin_list:
+            lower_coins[index] = coin_list[coin]
+
+    return(lower_coins)
+
+
 def get_asset_price(id, currency = 'usd'):
     return cg.get_price(id, currency, include_24hr_change='true')
+
 
 def get_asset(id):
     return cg.get_coin_market_chart_by_id()
 
+
+populate_coin_list()
 bot.run(TOKEN)
