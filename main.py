@@ -60,9 +60,9 @@ async def price(ctx, *args):
 
     assets = ','.join(lower)
     asset_data = get_asset_price(assets)
-    
+
     for asset in asset_data:
-        if "-" in str(asset_data[asset]['usd_24h_change']):
+        if asset_data[asset]['usd_24h_change'] < 0:
             await ctx.send("**" + asset + ":** $" + str(asset_data[asset]['usd']) + "\n24h change: " + str(round(asset_data[asset]['usd_24h_change'], 2)) + "%  :arrow_down:\n")
         else:
             await ctx.send("**" + asset + ":** $" + str(asset_data[asset]['usd']) + "\n24h change: " + str(round(asset_data[asset]['usd_24h_change'], 2)) + "%  :arrow_up:")
