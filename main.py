@@ -12,7 +12,7 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 cg = CoinGeckoAPI()
-bot = commands.Bot(command_prefix='$')
+bot = commands.Bot(command_prefix='^')
 channel = bot.get_channel('')
 default_currency = 'usd'
 alert_container = {}
@@ -95,7 +95,7 @@ async def before():
     print("Finished waiting")
 
 def get_asset_price(id, currency = 'usd'):
-    return cg.get_price(id, currency, include_market_cap='false', include_24hr_vol='false', include_24hr_change='true')
+    return cg.get_price(id, currency, include_24hr_change='true')
 
 def get_asset(id):
     return cg.get_coin_market_chart_by_id()
