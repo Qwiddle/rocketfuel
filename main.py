@@ -5,13 +5,17 @@ import datetime
 
 from pycoingecko import CoinGeckoAPI
 from discord.ext import commands, tasks
+from dotenv import load_dotenv
+
+# Import auth token
+load_dotenv()
+TOKEN = os.getenv("DISCORD_TOKEN")
 
 cg = CoinGeckoAPI()
 bot = commands.Bot(command_prefix='$')
 channel = bot.get_channel('')
 default_currency = 'usd'
 alert_container = {}
-TOKEN = "" # ADD AUTH TOKEN 
 
 @bot.event
 async def on_ready():
